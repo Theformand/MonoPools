@@ -5,9 +5,10 @@ A thin wrapper around Unity ObjecPools with slightly better ergonomics
  Make sure your poolables derive from MonoPoolObject or PoolObject.
  
  Usage:
+ ```
  var myPool = new MonoPool(myMonoPoolObjectPrefab);
- myPool.Spawn();
- myPool.Despawn();
+ var myPoolable = myPool.Spawn();
+ myPool.Despawn(myPoolable);
 
  MyPoolableObject : MonoPoolable
  {
@@ -26,3 +27,7 @@ A thin wrapper around Unity ObjecPools with slightly better ergonomics
      base.OnDespawn();
  }
  }
+```
+
+
+Poolables (both monobehaviours and not) all reference their own pool, so can handle their own despawn logic. They also know whether they are in the pool or not. Make sure you call base.OnXXX methods always.
