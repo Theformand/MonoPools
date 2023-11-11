@@ -1,0 +1,12 @@
+{
+	"name" : "com.theformand.monopools",
+	"version" : "1.0.0",
+	"displayName" : "MonoPools",
+	"description" : "A thin wrapper around Unity ObjectPools with slightly better ergonomics",
+	"unity": "2019.4",
+	"author": {
+		"name" : "Theformand",
+		"email" : "noneyabidness@getalife.com",
+		"url " :""
+	}
+}
