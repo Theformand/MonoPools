@@ -1,9 +1,33 @@
-# ScriptableObject-Collections
-A light system for managing collections of ScriptableObjects.
+# MonoPools
+A thin wrapper around Unity ObjecPools with slightly better ergonomics
 
 # How to use 
- Create a ScriptableObject (```MyDataObjectCollection.cs```, for example) that inherits from ```SOCollection<MyDataObject>```
+ Make sure your poolables derive from MonoPoolObject or PoolObject.
  
- You can choose to only auto-add or only auto-remove if you wish.
- 
-![SOCollections](https://user-images.githubusercontent.com/9436242/236463520-12a3b4a0-69ea-4c9f-abba-f40dc4891118.gif)
+ Usage:
+ ```
+ var myPool = new MonoPool(myMonoPoolObjectPrefab);
+ var myPoolable = myPool.Spawn();
+ myPool.Despawn(myPoolable);
+
+ MyPoolableObject : MonoPoolable
+ {
+  public override void OnCreate()
+ {
+     base.OnCreate();
+ }
+
+ public override void OnSpawn()
+ {
+     base.OnSpawn();
+ }
+
+ public override void OnDespawn()
+ {
+     base.OnDespawn();
+ }
+ }
+```
+
+
+Poolables (both monobehaviours and not) all reference their own pool, so can handle their own despawn logic. They also know whether they are in the pool or not. Make sure you call base.OnXXX methods always.
