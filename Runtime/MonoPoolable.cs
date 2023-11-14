@@ -1,13 +1,20 @@
+using System;
 using UnityEngine;
-using UnityEngine.Pool;
+
 
 namespace MonoPools
 {
-    public class MonoPoolObject : MonoBehaviour
+    public class MonoPoolable : MonoBehaviour
     {
-        protected ObjectPool<MonoPoolObject> pool;
         protected bool isInPool;
-        public void SetPool(ObjectPool<MonoPoolObject> pool) => this.pool = pool;
+        internal IMonoPool Pool;
+
+        public void Despawn()
+        {
+            if (Pool != null && !isInPool)
+                Pool.Despawn(this);
+        }
+
         public virtual void OnCreate() { isInPool = true; }
         public virtual void OnSpawn() { isInPool = false; }
         public virtual void OnDespawn() { isInPool = true; }

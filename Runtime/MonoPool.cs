@@ -6,67 +6,27 @@ using System;
 
 namespace MonoPools
 {
-    public class MonoPool
+    public class MonoPool<T> : IMonoPool where T : MonoPoolable
     {
-        private ObjectPool<MonoPoolObject> monoPool;
-        private ObjectPool<PoolObject> pool;
+        private readonly ObjectPool<T> pool;
+        public int NumActive => pool.CountActive;
+        public int NumTotal => pool.CountAll;
+        public int NumInactive => pool.CountInactive;
 
-        //TODO: Figure out a solution for this. Dont like the ternary per call. This could be called from hot loops by the user
-        public int NumActive => isMonobehaviour ? monoPool.CountActive : pool.CountActive;
-        public int NumTotal => isMonobehaviour ? monoPool.CountAll : pool.CountAll;
-        public int NumInactive => isMonobehaviour ? monoPool.CountInactive : pool.CountInactive;
+        //In-editor, we parent things under a new transform, for neat organization
+        //Not needed (and slightly faster without it) in builds
+        private readonly Transform editorParent;
 
-        //in-editor, we parent things under a new transform, for neat organization. Not needed (and slightly faster without it) in builds
-        private Transform editorParent;
-        private bool isMonobehaviour;
-
-        /// <summary>
-        /// Use this overload for non-monobehaviour classes
-        /// </summary>
-        /// <param name="poolObject"></param>
-        /// <param name="size"></param>
-        /// <param name="prewarm"></param>
-        public MonoPool(PoolObject poolObject, int size = 16, bool prewarm = true)
+        public MonoPool(T prefab, int size = 16, bool toggleGameObject = true, bool prewarm = true)
         {
-            isMonobehaviour = false;
-            pool = new ObjectPool<PoolObject>(
-                () =>
-                {
-                    var o = (PoolObject)Activator.CreateInstance(poolObject.GetType());
-                    o.SetPool(pool);
-                    o.OnCreate();
-                    return o;
-                },
-                (o) => o.OnSpawn(),
-                (o) => o.OnDespawn(),
-                null,
-                false,
-                size
-                );
-
-            if (prewarm)
-            {
-                List<PoolObject> prewarmList = new();
-
-                for (int i = 0; i < size; i++)
-                    prewarmList.Add(pool.Get());
-
-                for (int i = 0; i < prewarmList.Count; i++)
-                    pool.Release(prewarmList[i]);
-            }
-        }
-
-        public MonoPool(MonoPoolObject prefab, int size = 16, bool toggleGameObject = true, bool prewarm = true)
-        {
-            isMonobehaviour = true;
 #if UNITY_EDITOR
             editorParent = new GameObject("POOL_" + prefab.name).transform;
 #endif
-            monoPool = new ObjectPool<MonoPoolObject>(
+            pool = new ObjectPool<T>(
                 () =>
                 {
                     var o = Object.Instantiate(prefab);
-                    o.SetPool(monoPool);
+                    o.Pool = this;
                     o.OnCreate();
                     return o;
                 },
@@ -89,28 +49,35 @@ namespace MonoPools
                     if (toggleGameObject)
                         o.gameObject.SetActive(false);
 
-                }, null
-                , false,
+                },
+                null,
+                false,
                 size
                 );
 
             if (prewarm)
             {
-                List<MonoPoolObject> prewarmList = new();
+                List<T> prewarmList = new();
 
                 for (int i = 0; i < size; i++)
-                    prewarmList.Add(monoPool.Get());
+                    prewarmList.Add(pool.Get());
 
                 for (int i = 0; i < prewarmList.Count; i++)
-                    monoPool.Release(prewarmList[i]);
+                    pool.Release(prewarmList[i]);
             }
         }
 
-        public MonoPoolObject Spawn() => monoPool.Get();
-        public void Despawn(MonoPoolObject obj) => monoPool.Release(obj);
+        void IMonoPool.Despawn(MonoPoolable poolable)
+        {
+            pool.Release((T)poolable);
+        }
+
+        public T Spawn() => pool.Get();
+
+        public void Despawn(T obj) => pool.Release(obj);
 
 #if UNITY_EDITOR
-        private void EditorParenting(MonoPoolObject mpo, bool isDespawn)
+        private void EditorParenting(MonoPoolable mpo, bool isDespawn)
         {
             if (isDespawn)
                 mpo.transform.SetParent(editorParent);
@@ -118,5 +85,51 @@ namespace MonoPools
                 mpo.transform.SetParent(null);
         }
 #endif
+    }
+
+    public class Pool<T> : IPool where T : Poolable
+    {
+        private readonly ObjectPool<T> pool;
+        public int NumActive => pool.CountActive;
+        public int NumTotal => pool.CountAll;
+        public int NumInactive => pool.CountInactive;
+
+        public Pool(T poolObject, int size = 16, bool prewarm = true)
+        {
+            pool = new ObjectPool<T>(
+                () =>
+                {
+                    var o = (T)Activator.CreateInstance(poolObject.GetType());
+                    o.OnCreate();
+                    o.Pool = this;
+                    return o;
+                },
+                (o) => o.OnSpawn(),
+                (o) => o.OnDespawn(),
+                null,
+                false,
+                size
+                );
+
+            if (prewarm)
+            {
+                List<T> prewarmList = new();
+
+                for (int i = 0; i < size; i++)
+                    prewarmList.Add(pool.Get());
+
+                for (int i = 0; i < prewarmList.Count; i++)
+                    pool.Release(prewarmList[i]);
+            }
+        }
+
+        public T Spawn() => pool.Get();
+
+        public void Despawn(T obj) => pool.Release(obj);
+
+        void IPool.Despawn(Poolable poolable)
+        {
+            pool.Release((T)poolable);
+        }
     }
 }
