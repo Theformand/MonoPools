@@ -2,11 +2,11 @@
 A thin wrapper around Unity ObjecPools with slightly better ergonomics
 
 # How to use 
- Make sure your poolables derive from MonoPoolObject or PoolObject.
+ Make sure your poolables derive from MonoPoolable or Poolable.
  
  Usage:
  ```
- var myPool = new MonoPool(myMonoPoolObjectPrefab);
+ var myPool = new MonoPool(myMonoPoolObjectPrefab); // defaults {int size = 16, bool toggleGameObject = true, bool prewarm = true}
  var myPoolable = myPool.Spawn();
  myPool.Despawn(myPoolable);
 
